@@ -3,6 +3,7 @@
 Usage:
     python scripts/run_once.py alarm [--dry-run] [--only-beta]
     python scripts/run_once.py saved_filter [--dry-run] [--only-beta]
+    python scripts/run_once.py interest [--dry-run] [--only-beta]
 """
 from __future__ import annotations
 
@@ -25,6 +26,7 @@ async def _main(job_name: str) -> None:
     from app.http.rate_limiter import AsyncTokenBucket
     from app.http.session import create_http_client
     from app.jobs.alarm_job import AlarmJob
+    from app.jobs.interest_job import InterestJob
     from app.jobs.saved_filter_job import SavedFilterJob
     from app.notifications.dispatcher import Dispatcher
     from app.state.redis_store import RedisStateStore
@@ -55,6 +57,8 @@ async def _main(job_name: str) -> None:
             metrics = await AlarmJob(ekap, state, dispatcher).run()
         elif job_name == "saved_filter":
             metrics = await SavedFilterJob(ekap, state, dispatcher).run()
+        elif job_name == "interest":
+            metrics = await InterestJob(ekap, state, dispatcher).run()
         else:  # pragma: no cover - argparse prevents this
             raise ValueError(f"unknown job: {job_name}")
 
@@ -63,7 +67,7 @@ async def _main(job_name: str) -> None:
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="IhaleTakip scheduler: one-shot runner")
-    parser.add_argument("job", choices=("alarm", "saved_filter"))
+    parser.add_argument("job", choices=("alarm", "saved_filter", "interest"))
     parser.add_argument("--dry-run", action="store_true", help="skip FCM send (Firestore writes still occur)")
     parser.add_argument("--only-beta", action="store_true", help="limit to users with isBeta=true")
     return parser.parse_args()

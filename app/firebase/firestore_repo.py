@@ -59,6 +59,8 @@ def _fetch_active_users_sync() -> list[UserRef]:
         data = doc.to_dict() or {}
         if data.get("isActive") is False:
             continue
+        if data.get("isPro") is not True:
+            continue
         token = data.get("fcmToken")
         if not token:
             continue
@@ -153,6 +155,39 @@ async def iter_user_saved_filters(uid: str) -> AsyncIterator[SavedFilterDoc]:
     filters = await _run(_fetch_saved_filters_sync, uid)
     for f in filters:
         yield f
+
+
+# ---------------------------------------------------------------------------
+# IKN membership (for InterestJob exclusion)
+# ---------------------------------------------------------------------------
+
+def _fetch_alarm_ikns_sync(uid: str) -> set[str]:
+    db = get_firestore()
+    ikns: set[str] = set()
+    for doc in db.collection("users").document(uid).collection("alarms").stream():
+        d = doc.to_dict() or {}
+        # Prefer explicit tenderIkn field, fall back to doc.id (future IKN-keyed schema)
+        ikn = d.get("tenderIkn") or doc.id
+        if ikn:
+            ikns.add(str(ikn))
+    return ikns
+
+
+async def get_user_alarm_ikns(uid: str) -> set[str]:
+    return await _run(_fetch_alarm_ikns_sync, uid)
+
+
+def _fetch_saved_tender_ikns_sync(uid: str) -> set[str]:
+    db = get_firestore()
+    ikns: set[str] = set()
+    for doc in db.collection("users").document(uid).collection("savedTenders").stream():
+        # savedTenders are keyed by IKN
+        ikns.add(doc.id)
+    return ikns
+
+
+async def get_user_saved_tender_ikns(uid: str) -> set[str]:
+    return await _run(_fetch_saved_tender_ikns_sync, uid)
 
 
 # ---------------------------------------------------------------------------

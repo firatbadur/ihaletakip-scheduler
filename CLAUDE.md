@@ -4,15 +4,19 @@
 
 Bu repo, IhaleTakip React Native mobil uygulaması için Ubuntu üzerinde 7/24 çalışan bir Python bildirim servisidir. Mobil uygulama `/Users/tinyfect/Desktop/IhaleTakip/` dizinindedir; bu servis onun Firebase projesi (`ihale-53fbf`) üzerinden kullanıcı verilerini okur ve bildirim üretir.
 
-İki ana scheduler job'ı:
+Üç scheduler job'ı:
 
 1. **AlarmJob** — her gün saat 09:00 TR.
-   `users/{uid}/alarms/{tenderId}` koleksiyonundaki her ihalenin EKAP'tan güncel detayını çeker, önceki state ile karşılaştırır ve:
+   `users/{uid}/alarms/*` koleksiyonundaki her ihalenin EKAP'tan güncel detayını çeker, önceki state ile karşılaştırır ve:
    - `reminderDay` → ihale günü bildirimi
    - `documentChange` → doküman sayısı değiştiyse bildirim
    - `completed` → sonuçlandıysa bir kerelik bildirim + Firestore'da `alarm.completed=true`
 2. **SavedFilterJob** — her gün saat 10:00 TR.
    `users/{uid}/savedFilters/{filterId}` koleksiyonunda `alarm=true` olan tüm filtreleri fingerprint'e göre grupla, **her grup için tek EKAP çağrısı** ile bugün yayınlanmış ihaleleri çek, daha önce bildirilmemiş olanları her kullanıcıya dispatch et.
+3. **InterestJob** — her gün 08:00-17:00 arası saat başı (10 tetikleme).
+   Kullanıcının kaydettiği filtreleri (alarm flag ayrımı yok) union'layıp EKAP'ta `ihaleDurumIdList=[2,3]` (katılıma açık) ile arama yapar. `alarms` veya `savedTenders`'da **zaten kayıtlı olmayan** + daha önce bu user'a önerilmemiş adaylardan **1 tanesini** "İlgilenebileceğiniz İlan" olarak gönderir. Günde kullanıcı başına max `interest_daily_cap` (varsayılan: 3) bildirim; IKN dedup `interest_dedup_days` gün (varsayılan: 7).
+
+**Kullanıcı filtresi**: Sadece `isPro=true` kullanıcılar bildirim alır (üç job için de geçerli). `isActive != false` + `fcmToken != null` de şarttır.
 
 **Not**: `ilan.gov.tr` bu fazın kapsamı dışıdır — bu repo içinde hiçbir ilan.gov.tr kodu yoktur.
 
@@ -56,16 +60,18 @@ docker compose down
 
 ```
 users/{uid}
-  email, displayName, photoURL, createdAt, fcmToken, isActive, isBeta
-  alarms/{tenderId}
+  email, displayName, photoURL, createdAt, fcmToken, isActive, isBeta, isPro
+  alarms/{tenderId | ikn}         ← key: mobil tarafta gecis halinde (tenderIkn alani her zaman var)
     { tenderId, tenderTitle, tenderIkn, institution,
       reminderDay, documentChange, completed }
   savedFilters/{filterId}
     { name, filters, tags, alarm, createdAt }
+  savedTenders/{ikn}              ← key = IKN
+    { ikn, tenderTitle, ... , savedAt }
   notifications/{notifId}
     { type, title, body, tenderId, tenderTitle, tenderIkn,
       institution, read, createdAt }
-  favorites/{tenderId}  (bu servis okumaz)
+  favorites/{tenderId}            ← legacy, servis okumaz
 ```
 
 Servis kaynak listesi:

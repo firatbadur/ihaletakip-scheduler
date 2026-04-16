@@ -64,3 +64,16 @@ def saved_filter_match_template(
         "tenderIkn": tender.ikn,
         "institution": tender.idare_adi,
     }
+
+
+def interest_template(tender: TenderSummary) -> dict[str, Any]:
+    name = tender.ihale_adi or "İhale"
+    return {
+        "type": "tender",
+        "title": "İlgilenebileceğiniz İlan",
+        "body": _title(name, limit=80),
+        "tenderId": tender.id,
+        "tenderTitle": tender.ihale_adi,
+        "tenderIkn": tender.ikn,
+        "institution": tender.idare_adi,
+    }

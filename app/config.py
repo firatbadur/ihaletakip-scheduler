@@ -29,6 +29,11 @@ class Settings(BaseSettings):
     # Scheduler crons (Europe/Istanbul)
     alarm_cron: str = Field(default="0 9 * * *")
     saved_filter_cron: str = Field(default="0 10 * * *")
+    interest_cron: str = Field(default="0 8-17 * * *")
+
+    # InterestJob limits
+    interest_daily_cap: int = Field(default=3, ge=1)
+    interest_dedup_days: int = Field(default=7, ge=1)
 
     # Redis
     redis_url: str = Field(default="redis://redis:6379/0")

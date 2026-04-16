@@ -7,6 +7,7 @@ from apscheduler.triggers.cron import CronTrigger
 
 from app.config import settings
 from app.jobs.alarm_job import AlarmJob
+from app.jobs.interest_job import InterestJob
 from app.jobs.saved_filter_job import SavedFilterJob
 from app.utils.logging import logger
 
@@ -26,8 +27,9 @@ def build_scheduler(
     *,
     alarm_job: AlarmJob,
     saved_filter_job: SavedFilterJob,
+    interest_job: InterestJob,
 ) -> AsyncIOScheduler:
-    """Create an AsyncIOScheduler pre-wired with both daily cron jobs."""
+    """Create an AsyncIOScheduler pre-wired with all cron jobs."""
     scheduler = AsyncIOScheduler(
         timezone=settings.timezone,
         job_defaults={
@@ -53,13 +55,23 @@ def build_scheduler(
         name="SavedFilterJob (daily)",
         replace_existing=True,
     )
+    scheduler.add_job(
+        interest_job.run,
+        trigger=CronTrigger.from_crontab(
+            settings.interest_cron, timezone=settings.timezone
+        ),
+        id="interest_job",
+        name="InterestJob (hourly 08-17)",
+        replace_existing=True,
+    )
 
     scheduler.add_listener(_listener, EVENT_JOB_ERROR | EVENT_JOB_EXECUTED)
 
     logger.info(
-        "scheduler built: alarm_cron='{a}' saved_filter_cron='{s}' tz={tz}",
+        "scheduler built: alarm='{a}' saved_filter='{s}' interest='{i}' tz={tz}",
         a=settings.alarm_cron,
         s=settings.saved_filter_cron,
+        i=settings.interest_cron,
         tz=settings.timezone,
     )
     return scheduler

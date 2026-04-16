@@ -73,3 +73,29 @@ class RedisStateStore(StateStore):
 
     async def add_idempotency(self, key: str, ttl_seconds: int = 7 * _DAY_SECONDS) -> None:
         await self._r.set(f"idem:{key}", "1", ex=ttl_seconds)
+
+    # --- interest notifications --------------------------------------------
+
+    async def was_interest_notified(self, uid: str, ikn: str) -> bool:
+        return bool(await self._r.sismember(f"interest_notified:{uid}", ikn))
+
+    async def mark_interest_notified(
+        self, uid: str, ikn: str, ttl_seconds: int
+    ) -> None:
+        key = f"interest_notified:{uid}"
+        async with self._r.pipeline(transaction=False) as pipe:
+            pipe.sadd(key, ikn)
+            pipe.expire(key, ttl_seconds)
+            await pipe.execute()
+
+    async def get_interest_sent_today(self, uid: str, date_str: str) -> int:
+        val = await self._r.get(f"interest_daily:{uid}:{date_str}")
+        return int(val) if val and str(val).isdigit() else 0
+
+    async def incr_interest_sent_today(self, uid: str, date_str: str) -> int:
+        key = f"interest_daily:{uid}:{date_str}"
+        async with self._r.pipeline(transaction=False) as pipe:
+            pipe.incr(key)
+            pipe.expire(key, 36 * 60 * 60)  # 36h — safely covers a day
+            res = await pipe.execute()
+        return int(res[0])

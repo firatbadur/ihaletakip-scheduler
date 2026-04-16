@@ -18,6 +18,7 @@ from app.firebase.fcm import FcmSender
 from app.http.rate_limiter import AsyncTokenBucket
 from app.http.session import create_http_client
 from app.jobs.alarm_job import AlarmJob
+from app.jobs.interest_job import InterestJob
 from app.jobs.saved_filter_job import SavedFilterJob
 from app.notifications.dispatcher import Dispatcher
 from app.scheduler.scheduler import build_scheduler
@@ -49,10 +50,12 @@ async def _run() -> None:
 
         alarm_job = AlarmJob(ekap, state, dispatcher)
         saved_filter_job = SavedFilterJob(ekap, state, dispatcher)
+        interest_job = InterestJob(ekap, state, dispatcher)
 
         scheduler = build_scheduler(
             alarm_job=alarm_job,
             saved_filter_job=saved_filter_job,
+            interest_job=interest_job,
         )
         scheduler.start()
         logger.info("scheduler started; waiting for triggers...")
