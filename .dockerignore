@@ -15,7 +15,6 @@ __pycache__/
 .coverage
 htmlcov/
 tests/
-scripts/
 scripts/serviceAccountKey.json
 README.md
 CLAUDE.md
