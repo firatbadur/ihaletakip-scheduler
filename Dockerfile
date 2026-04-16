@@ -33,6 +33,7 @@ WORKDIR /app
 
 COPY --from=builder --chown=app:app /root/.local /home/app/.local
 COPY --chown=app:app app /app/app
+COPY --chown=app:app scripts /app/scripts
 
 RUN mkdir -p /data/logs /secrets && chown -R app:app /data /secrets
 
