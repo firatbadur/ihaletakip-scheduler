@@ -1,0 +1,38 @@
+services:
+  scheduler:
+    build: .
+    image: ihaletakip-scheduler:latest
+    container_name: ihaletakip-scheduler
+    env_file: .env
+    depends_on:
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./scripts/serviceAccountKey.json:/secrets/serviceAccountKey.json:ro
+      - scheduler_logs:/data/logs
+    restart: unless-stopped
+    stop_grace_period: 60s
+
+  redis:
+    image: redis:7-alpine
+    container_name: ihaletakip-redis
+    command:
+      - redis-server
+      - --appendonly
+      - "yes"
+      - --maxmemory
+      - "256mb"
+      - --maxmemory-policy
+      - allkeys-lru
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  scheduler_logs:
+  redis_data:

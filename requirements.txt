@@ -1,0 +1,13 @@
+firebase-admin==6.5.0
+apscheduler==3.10.4
+httpx[http2]==0.27.2
+tenacity==8.5.0
+loguru==0.7.2
+pydantic==2.8.2
+pydantic-settings==2.4.0
+cryptography==43.0.1
+redis==5.0.8
+python-dateutil==2.9.0
+tzdata==2024.1
+uvloop==0.21.0; sys_platform != "win32" and python_version >= "3.12"
+uvloop==0.20.0; sys_platform != "win32" and python_version < "3.12"

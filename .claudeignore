@@ -1,0 +1,12 @@
+scripts/serviceAccountKey.json
+.env
+.env.*
+.venv/
+venv/
+__pycache__/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.pyc
+logs/
+/data/
